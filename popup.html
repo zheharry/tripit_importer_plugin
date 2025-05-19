@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TripIt Plan Importer</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      width: 350px;
+      padding: 10px;
+    }
+    textarea {
+      width: 95%;
+      min-height: 150px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <h3>Import your CSV file or paste data below:</h3>
+  <input type="file" id="csvFileInput" accept=".csv" style="margin-bottom:10px;" />
+  <textarea id="planData" placeholder="Subject,Start Date,Start Time,End Date,End Time,Location,Description..."></textarea>
+  <button id="importButton">Import to TripIt</button>
+  <div id="status"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
