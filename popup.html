@@ -1,43 +1,227 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>TripIt Plan Importer</title>
+  <title>TripIt Direct Importer</title>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      font-family: sans-serif;
-      width: 350px;
-      padding: 10px;
-    }
-    textarea {
-      width: 95%;
-      min-height: 150px;
+    body { font-family: sans-serif; width: 480px; padding: 10px; font-size: 14px; background-color: #f9f9f9; }
+    .container { background-color: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h3 { color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 0; }
+    .section { margin-bottom: 20px; border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px; background-color: #fff; }
+    .section h4 { margin-top: 0; color: #555; }
+    label { display: block; margin-bottom: 3px; font-weight: bold; color: #444; font-size: 0.9em; }
+    input[type="text"], input[type="date"], input[type="time"], select {
+      width: calc(100% - 12px);
+      padding: 8px 6px;
       margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 0.95em;
     }
+    .entry { border: 1px dashed #d0d0d0; padding: 12px; margin-bottom: 12px; position: relative; background-color: #fdfdfd; border-radius: 4px; }
+    .entry .remove-entry-button {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background-color: #ff6b6b;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      cursor: pointer;
+      border-radius: 3px;
+      font-size: 0.8em;
+    }
+    .entry .remove-entry-button:hover { background-color: #e04a4a; }
+    .button-bar { margin-top: 12px; text-align: right; }
     button {
       padding: 10px 15px;
       background-color: #007bff;
       color: white;
       border: none;
       cursor: pointer;
-      border-radius: 3px;
+      border-radius: 4px;
+      margin-left: 5px;
+      font-size: 0.95em;
     }
-    button:hover {
-      background-color: #0056b3;
-    }
-    #status {
-      margin-top: 10px;
+    button:hover { background-color: #0056b3; }
+    button.add-button { background-color: #28a745; }
+    button.add-button:hover { background-color: #1e7e34; }
+    #submit-button { background-color: #0056b3; width: 100%; padding: 12px; font-size: 1em; }
+    #submit-button:hover { background-color: #004085; }
+    .hidden { display: none; }
+    template { display: none; }
+    #status-area {
+      margin-bottom: 15px;
+      padding: 10px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      min-height: 20px;
+      background-color: #e9ecef;
+      color: #495057;
       font-size: 0.9em;
+      text-align: center;
     }
+    .status-error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb;}
+    .status-success { background-color: #d4edda; color: #155724; border-color: #c3e6cb;}
+    .input-group { display: flex; gap: 10px; }
+    .input-group > div { flex: 1; }
   </style>
 </head>
 <body>
-  <h3>Import your CSV file or paste data below:</h3>
-  <input type="file" id="csvFileInput" accept=".csv" style="margin-bottom:10px;" />
-  <textarea id="planData" placeholder="Subject,Start Date,Start Time,End Date,End Time,Location,Description..."></textarea>
-  <button id="importButton">Import to TripIt</button>
-  <div id="status"></div>
+  <div class="container">
+    <div id="status-area">Welcome! Ready to import to TripIt.com.</div>
+    <div id="importer-form-container">
+      <div class="section" id="trip-details-section">
+        <h4>Trip Details</h4>
+        <label for="tripName">Trip Name:</label>
+        <input type="text" id="tripName" required>
+        <div class="input-group">
+            <div>
+                <label for="tripStartDate">Start Date:</label>
+                <input type="date" id="tripStartDate">
+            </div>
+            <div>
+                <label for="tripEndDate">End Date:</label>
+                <input type="date" id="tripEndDate">
+            </div>
+        </div>
+        <label for="tripDestination">Main Destination (City, Country):</label>
+        <input type="text" id="tripDestination">
+      </div>
+
+      <div class="section" id="flights-section-container">
+        <h4>Flights</h4>
+        <div id="flights-section"></div>
+        <div class="button-bar">
+          <button type="button" id="add-flight-button" class="add-button">Add Flight</button>
+        </div>
+      </div>
+
+      <div class="section" id="hotels-section-container">
+        <h4>Hotels</h4>
+        <div id="hotels-section"></div>
+        <div class="button-bar">
+          <button type="button" id="add-hotel-button" class="add-button">Add Hotel</button>
+        </div>
+      </div>
+
+      <div class="section" id="transportation-section-container">
+        <h4>Transportation</h4>
+        <div id="transportation-section"></div>
+        <div class="button-bar">
+          <button type="button" id="add-transport-button" class="add-button">Add Transportation</button>
+        </div>
+      </div>
+
+      <div class="section" id="activities-section-container">
+        <h4>Activities</h4>
+        <div id="activities-section"></div>
+        <div class="button-bar">
+          <button type="button" id="add-activity-button" class="add-button">Add Activity</button>
+        </div>
+      </div>
+
+      <div class="section" id="todos-section-container">
+        <h4>Notes/TODOs</h4>
+        <div id="todos-section"></div>
+        <div class="button-bar">
+          <button type="button" id="add-todo-button" class="add-button">Add Note/TODO</button>
+        </div>
+      </div>
+
+      <button type="button" id="submit-button">Start Import to TripIt.com</button>
+    </div>
+  </div>
+
+  <template id="flight-template">
+    <div class="entry flight-entry">
+      <button type="button" class="remove-entry-button">X</button>
+      <label>Airline:</label><input type="text" class="flightAirline">
+      <label>Flight Number:</label><input type="text" class="flightNumber">
+      <div class="input-group">
+        <div>
+          <label>Departure City/Airport:</label><input type="text" class="flightDepCity">
+          <label>Departure Date:</label><input type="date" class="flightDepDate">
+          <label>Departure Time:</label><input type="time" class="flightDepTime">
+        </div>
+        <div>
+          <label>Arrival City/Airport:</label><input type="text" class="flightArrCity">
+          <label>Arrival Date:</label><input type="date" class="flightArrDate">
+          <label>Arrival Time:</label><input type="time" class="flightArrTime">
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="hotel-template">
+    <div class="entry hotel-entry">
+      <button type="button" class="remove-entry-button">X</button>
+      <label>Hotel Name:</label><input type="text" class="hotelName">
+      <label>City:</label><input type="text" class="hotelCity">
+      <div class="input-group">
+        <div>
+          <label>Check-in Date:</label><input type="date" class="hotelCheckinDate">
+        </div>
+        <div>
+          <label>Check-out Date:</label><input type="date" class="hotelCheckoutDate">
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="transport-template">
+    <div class="entry transport-entry">
+      <button type="button" class="remove-entry-button">X</button>
+      <label>Type:</label>
+      <select class="transportType">
+        <option value="Car Rental">Car Rental</option>
+        <option value="Taxi">Taxi</option>
+        <option value="Train">Train</option>
+        <option value="Bus">Bus</option>
+        <option value="Ferry">Ferry</option>
+        <option value="Other">Other</option>
+      </select>
+      <label>Vendor/Company:</label><input type="text" class="transportVendor">
+      <div class="input-group">
+        <div>
+          <label>Start Location:</label><input type="text" class="transportStartLoc">
+          <label>Start Date:</label><input type="date" class="transportStartDate">
+          <label>Start Time:</label><input type="time" class="transportStartTime">
+        </div>
+        <div>
+          <label>End Location:</label><input type="text" class="transportEndLoc">
+          <label>End Date:</label><input type="date" class="transportEndDate">
+          <label>End Time:</label><input type="time" class="transportEndTime">
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="activity-template">
+    <div class="entry activity-entry">
+      <button type="button" class="remove-entry-button">X</button>
+      <label>Activity Name/Description:</label><input type="text" class="activityName">
+      <label>Location:</label><input type="text" class="activityLocation">
+      <div class="input-group">
+        <div>
+            <label>Date:</label><input type="date" class="activityDate">
+        </div>
+        <div>
+            <label>Time:</label><input type="time" class="activityTime">
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="todo-template">
+    <div class="entry todo-entry">
+      <button type="button" class="remove-entry-button">X</button>
+      <label>Note/TODO Description:</label><input type="text" class="todoDescription">
+      <label>Date (Optional):</label><input type="date" class="todoDate">
+    </div>
+  </template>
+
   <script src="popup.js"></script>
 </body>
 </html>
