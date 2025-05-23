@@ -1,10 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   // --- Element References ---
-  const authStatusDiv = document.getElementById('auth-status');
-  const connectButton = document.getElementById('connect-button');
-  const disconnectButton = document.getElementById('disconnect-button');
-  const importerForm = document.getElementById('importer-form');
-  const submissionStatusDiv = document.getElementById('submission-status');
+  const statusArea = document.getElementById('status-area');
+  const importerFormContainer = document.getElementById('importer-form-container');
 
   // Trip Details
   const tripNameInput = document.getElementById('tripName');
@@ -25,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const addTransportButton = document.getElementById('add-transport-button');
   const addActivityButton = document.getElementById('add-activity-button');
   const addTodoButton = document.getElementById('add-todo-button');
+  const submitButton = document.getElementById('submit-button');
 
   // Templates
   const flightTemplate = document.getElementById('flight-template');
@@ -34,44 +32,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const todoTemplate = document.getElementById('todo-template');
 
   // --- Utility Functions ---
-  function updateAuthUI(isAuthenticated, message = '') {
-    if (isAuthenticated) {
-      authStatusDiv.textContent = message || 'Connected to SAP Concur.';
-      authStatusDiv.className = 'status-connected';
-      connectButton.classList.add('hidden');
-      disconnectButton.classList.remove('hidden');
-      importerForm.classList.remove('hidden');
-    } else {
-      authStatusDiv.textContent = message || 'Not connected. Please authenticate.';
-      authStatusDiv.className = 'status-disconnected';
-      connectButton.classList.remove('hidden');
-      disconnectButton.classList.add('hidden');
-      importerForm.classList.add('hidden');
-      submissionStatusDiv.textContent = ''; // Clear any previous submission status
+  function updateStatus(message, isError = false, isSuccess = false) {
+    statusArea.innerHTML = message; // Use innerHTML to allow for list formatting
+    statusArea.className = 'status-area'; // Reset classes
+    if (isError) {
+      statusArea.classList.add('status-error');
+    } else if (isSuccess) {
+      statusArea.classList.add('status-success');
     }
   }
 
   function addEntry(sectionElement, templateElement) {
     if (!templateElement) {
-        console.error("Template not found for this section");
-        return;
+      console.error("Template not found for this section");
+      updateStatus("Error: UI template missing.", true);
+      return;
     }
     const clone = templateElement.content.cloneNode(true);
     // Clear input values in the cloned template
-    const inputs = clone.querySelectorAll('input[type="text"], input[type="date"], input[type="time"], input[type="number"], select');
+    const inputs = clone.querySelectorAll('input[type="text"], input[type="date"], input[type="time"], select');
     inputs.forEach(input => {
         if (input.type === 'select-one') {
-            input.selectedIndex = 0;
+            input.selectedIndex = 0; // Reset select to the first option
         } else {
-            input.value = '';
+            input.value = ''; // Clear value for other inputs
         }
     });
     sectionElement.appendChild(clone);
   }
 
-  function removeEntry(event, parentSelector) {
-    if (event.target.classList.contains('remove-button')) {
-      const entryToRemove = event.target.closest(parentSelector);
+  function handleRemoveEntry(event) {
+    if (event.target.classList.contains('remove-entry-button')) {
+      const entryToRemove = event.target.closest('.entry');
       if (entryToRemove) {
         entryToRemove.remove();
       }
@@ -80,36 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Event Listeners ---
 
-  // Authentication
-  if (connectButton) {
-    connectButton.addEventListener('click', () => {
-      authStatusDiv.textContent = 'Attempting to connect...';
-      authStatusDiv.className = 'status-pending';
-      chrome.runtime.sendMessage({ type: "INITIATE_AUTH" }, (response) => {
-        if (chrome.runtime.lastError) {
-          console.error("Error sending INITIATE_AUTH message:", chrome.runtime.lastError.message);
-          updateAuthUI(false, `Error initiating connection: ${chrome.runtime.lastError.message}`);
-        }
-      });
-    });
-  }
-
-  if (disconnectButton) {
-    disconnectButton.addEventListener('click', () => {
-      authStatusDiv.textContent = 'Disconnecting...';
-      authStatusDiv.className = 'status-pending';
-      chrome.runtime.sendMessage({ type: "DISCONNECT_AUTH" }, (response) => {
-        if (chrome.runtime.lastError) {
-            console.error("Error sending DISCONNECT_AUTH message:", chrome.runtime.lastError.message);
-             // Update UI anyway or based on expected response from background
-            updateAuthUI(false, 'Failed to disconnect properly. Please try again.');
-        }
-        // Background will send AUTH_FAILURE or similar, or we can directly update UI
-        updateAuthUI(false, 'Disconnected successfully.');
-      });
-    });
-  }
-
   // "Add" buttons
   if (addFlightButton) addFlightButton.addEventListener('click', () => addEntry(flightsSection, flightTemplate));
   if (addHotelButton) addHotelButton.addEventListener('click', () => addEntry(hotelsSection, hotelTemplate));
@@ -117,23 +79,19 @@ document.addEventListener('DOMContentLoaded', () => {
   if (addActivityButton) addActivityButton.addEventListener('click', () => addEntry(activitiesSection, activityTemplate));
   if (addTodoButton) addTodoButton.addEventListener('click', () => addEntry(todosSection, todoTemplate));
 
-  // "Remove" buttons (using event delegation)
-  if (flightsSection) flightsSection.addEventListener('click', (e) => removeEntry(e, '.flight-entry'));
-  if (hotelsSection) hotelsSection.addEventListener('click', (e) => removeEntry(e, '.hotel-entry'));
-  if (transportationSection) transportationSection.addEventListener('click', (e) => removeEntry(e, '.transport-entry'));
-  if (activitiesSection) activitiesSection.addEventListener('click', (e) => removeEntry(e, '.activity-entry'));
-  if (todosSection) todosSection.addEventListener('click', (e) => removeEntry(e, '.todo-entry'));
-
+  // Event Delegation for "Remove" buttons
+  if (flightsSection) flightsSection.addEventListener('click', handleRemoveEntry);
+  if (hotelsSection) hotelsSection.addEventListener('click', handleRemoveEntry);
+  if (transportationSection) transportationSection.addEventListener('click', handleRemoveEntry);
+  if (activitiesSection) activitiesSection.addEventListener('click', handleRemoveEntry);
+  if (todosSection) todosSection.addEventListener('click', handleRemoveEntry);
 
   // Form Submission
-  if (importerForm) {
-    importerForm.addEventListener('submit', (event) => {
-      event.preventDefault();
-      submissionStatusDiv.textContent = 'Processing...';
-      submissionStatusDiv.style.color = 'orange';
-
+  if (submitButton) {
+    submitButton.addEventListener('click', () => {
+      submitButton.disabled = true; // Disable button
       // --- Data Collection ---
-      const collectedData = {
+      const tripData = {
         tripDetails: {
           name: tripNameInput.value.trim(),
           startDate: tripStartDateInput.value,
@@ -147,90 +105,79 @@ document.addEventListener('DOMContentLoaded', () => {
         todos: []
       };
 
-      // Collect Flights
+      // Collect Flights, Hotels, etc. (Code from previous turn, assumed correct)
       flightsSection.querySelectorAll('.flight-entry').forEach(entry => {
-        collectedData.flights.push({
-          airline: entry.querySelector('.flightAirline').value.trim(),
-          flightNumber: entry.querySelector('.flightNumber').value.trim(),
-          depCity: entry.querySelector('.flightDepCity').value.trim(),
-          depDate: entry.querySelector('.flightDepDate').value,
-          depTime: entry.querySelector('.flightDepTime').value,
-          arrCity: entry.querySelector('.flightArrCity').value.trim(),
-          arrDate: entry.querySelector('.flightArrDate').value,
-          arrTime: entry.querySelector('.flightArrTime').value,
+        tripData.flights.push({
+          airline: entry.querySelector('.flightAirline')?.value.trim(),
+          flightNumber: entry.querySelector('.flightNumber')?.value.trim(),
+          depCity: entry.querySelector('.flightDepCity')?.value.trim(),
+          depDate: entry.querySelector('.flightDepDate')?.value,
+          depTime: entry.querySelector('.flightDepTime')?.value,
+          arrCity: entry.querySelector('.flightArrCity')?.value.trim(),
+          arrDate: entry.querySelector('.flightArrDate')?.value,
+          arrTime: entry.querySelector('.flightArrTime')?.value,
         });
       });
-
-      // Collect Hotels
       hotelsSection.querySelectorAll('.hotel-entry').forEach(entry => {
-        collectedData.hotels.push({
-          name: entry.querySelector('.hotelName').value.trim(),
-          city: entry.querySelector('.hotelCity').value.trim(),
-          checkinDate: entry.querySelector('.hotelCheckinDate').value,
-          checkoutDate: entry.querySelector('.hotelCheckoutDate').value,
+        tripData.hotels.push({
+          name: entry.querySelector('.hotelName')?.value.trim(),
+          city: entry.querySelector('.hotelCity')?.value.trim(),
+          checkinDate: entry.querySelector('.hotelCheckinDate')?.value,
+          checkoutDate: entry.querySelector('.hotelCheckoutDate')?.value,
         });
       });
-
-      // Collect Transportation
       transportationSection.querySelectorAll('.transport-entry').forEach(entry => {
-        collectedData.transportation.push({
-          type: entry.querySelector('.transportType').value,
-          vendor: entry.querySelector('.transportVendor').value.trim(),
-          startLoc: entry.querySelector('.transportStartLoc').value.trim(),
-          startDate: entry.querySelector('.transportStartDate').value,
-          startTime: entry.querySelector('.transportStartTime').value,
-          endLoc: entry.querySelector('.transportEndLoc').value.trim(),
-          endDate: entry.querySelector('.transportEndDate').value,
-          endTime: entry.querySelector('.transportEndTime').value,
+        tripData.transportation.push({
+          type: entry.querySelector('.transportType')?.value,
+          vendor: entry.querySelector('.transportVendor')?.value.trim(),
+          startLoc: entry.querySelector('.transportStartLoc')?.value.trim(),
+          startDate: entry.querySelector('.transportStartDate')?.value,
+          startTime: entry.querySelector('.transportStartTime')?.value,
+          endLoc: entry.querySelector('.transportEndLoc')?.value.trim(),
+          endDate: entry.querySelector('.transportEndDate')?.value,
+          endTime: entry.querySelector('.transportEndTime')?.value,
         });
       });
-      
-      // Collect Activities
       activitiesSection.querySelectorAll('.activity-entry').forEach(entry => {
-        collectedData.activities.push({
-          name: entry.querySelector('.activityName').value.trim(),
-          location: entry.querySelector('.activityLocation').value.trim(),
-          date: entry.querySelector('.activityDate').value,
-          time: entry.querySelector('.activityTime').value,
-          cost: entry.querySelector('.activityCost').value,
+        tripData.activities.push({
+          name: entry.querySelector('.activityName')?.value.trim(),
+          location: entry.querySelector('.activityLocation')?.value.trim(),
+          date: entry.querySelector('.activityDate')?.value,
+          time: entry.querySelector('.activityTime')?.value,
+        });
+      });
+      todosSection.querySelectorAll('.todo-entry').forEach(entry => {
+        tripData.todos.push({
+          description: entry.querySelector('.todoDescription')?.value.trim(),
+          date: entry.querySelector('.todoDate')?.value,
         });
       });
 
-      // Collect TODOs
-      todosSection.querySelectorAll('.todo-entry').forEach(entry => {
-        collectedData.todos.push({
-          description: entry.querySelector('.todoDescription').value.trim(),
-          dueDate: entry.querySelector('.todoDueDate').value,
-          location: entry.querySelector('.todoLocation').value.trim(),
-        });
-      });
 
       // --- Basic Validation ---
-      if (!collectedData.tripDetails.name) {
-        submissionStatusDiv.textContent = 'Trip Name is required.';
-        submissionStatusDiv.style.color = 'red';
+      if (!tripData.tripDetails.name) {
+        updateStatus('Trip Name is required.', true);
         tripNameInput.focus();
+        submitButton.disabled = false; // Re-enable button on validation failure
         return;
       }
-      // Add more validation as needed for other fields or sections
 
-      console.log("Collected Data:", collectedData);
-      submissionStatusDiv.textContent = 'Submitting data...';
-      chrome.runtime.sendMessage({ type: "SUBMIT_DATA", data: collectedData }, (response) => {
+      console.log("Collected Trip Data:", tripData);
+      updateStatus('Importing... Please ensure you are logged into TripIt.com in an active tab and that the page is fully loaded.');
+      
+      chrome.runtime.sendMessage({ type: "START_IMPORT", data: tripData }, (response) => {
         if (chrome.runtime.lastError) {
-          console.error("Error sending SUBMIT_DATA:", chrome.runtime.lastError.message);
-          submissionStatusDiv.textContent = `Error submitting: ${chrome.runtime.lastError.message}`;
-          submissionStatusDiv.style.color = 'red';
+          console.error("Error sending START_IMPORT message:", chrome.runtime.lastError.message);
+          updateStatus(`Error initiating import: ${chrome.runtime.lastError.message}`, true);
+          submitButton.disabled = false; // Re-enable button on message sending failure
           return;
         }
-        if (response && response.success) {
-          submissionStatusDiv.textContent = 'Data submitted successfully! ' + (response.message || '');
-          submissionStatusDiv.style.color = 'green';
-          // Optionally clear form or parts of it
-          // importerForm.reset(); // This might be too aggressive for dynamic fields
-        } else {
-          submissionStatusDiv.textContent = 'Submission failed: ' + (response.error || 'Unknown error from background.');
-          submissionStatusDiv.style.color = 'red';
+        if (response && response.error) {
+             updateStatus(`Initial background response error: ${response.error}`, true);
+             // Consider if button should be re-enabled here too, if it's a synchronous error from background.
+             // For now, assuming background will always lead to an IMPORT_FINAL_RESULT
+        } else if (response && response.message) {
+             updateStatus(response.message, false);
         }
       });
     });
@@ -238,43 +185,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Message Listener from Background ---
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    switch (message.type) {
-      case "AUTH_SUCCESS":
-        updateAuthUI(true, 'Successfully connected to SAP Concur!');
-        break;
-      case "AUTH_FAILURE":
-        updateAuthUI(false, `Authentication failed: ${message.error || 'Unknown error.'}`);
-        break;
-      case "AUTH_REQUIRED":
-        updateAuthUI(false, "Connection required. Please connect to SAP Concur.");
-        break;
-      case "CHECK_AUTH_STATUS_RESPONSE": // New message type for initial check
-        updateAuthUI(message.isAuthenticated, message.message);
-        break;
-      case "DATA_SUBMISSION_RESULT": // For feedback after submit from background
-        if (message.success) {
-            submissionStatusDiv.textContent = 'Data processed successfully by background: ' + (message.detail || '');
-            submissionStatusDiv.style.color = 'green';
-        } else {
-            submissionStatusDiv.textContent = 'Background processing error: ' + (message.error || 'Unknown error.');
-            submissionStatusDiv.style.color = 'red';
+    if (message.type === "IMPORT_STATUS") { // This is for intermediate progress updates
+      console.log("IMPORT_STATUS received:", message);
+      updateStatus(message.message, message.isError);
+    } else if (message.type === "IMPORT_FINAL_RESULT") {
+      console.log("IMPORT_FINAL_RESULT received:", message);
+      let finalMsg = "";
+      if (message.success) {
+        finalMsg = `Import complete. Successfully processed ${message.summary.successful} of ${message.summary.total} items.`;
+        updateStatus(finalMsg, false, true); // isError = false, isSuccess = true
+      } else {
+        finalMsg = `Import finished with errors. Successfully processed ${message.summary.successful} of ${message.summary.total} items.`;
+        if (message.errors && message.errors.length > 0) {
+          finalMsg += "<br><strong>Errors:</strong><ul>";
+          message.errors.forEach(err => {
+            finalMsg += `<li>${err}</li>`;
+          });
+          finalMsg += "</ul>";
         }
-        break;
+        updateStatus(finalMsg, true, false); // isError = true, isSuccess = false
+      }
+      submitButton.disabled = false; // Re-enable button
     }
-    // Return true if sendResponse will be used asynchronously (not needed here for simple UI updates)
   });
 
-  // --- Initial UI State Check ---
-  authStatusDiv.textContent = 'Checking authentication status...';
-  authStatusDiv.className = 'status-pending';
-  chrome.runtime.sendMessage({ type: "CHECK_AUTH_STATUS" }, (response) => {
-     if (chrome.runtime.lastError) {
-        console.warn("Error sending CHECK_AUTH_STATUS message or background not ready:", chrome.runtime.lastError.message);
-        // Assume not authenticated if background isn't responding yet, or if an error occurs
-        updateAuthUI(false, "Could not verify connection status. Please try connecting.");
-     }
-     // Response will be handled by the onMessage listener for "CHECK_AUTH_STATUS_RESPONSE"
-     // If background doesn't send a specific response for this, the UI will remain in pending
-     // or default to disconnected. The onMessage listener is more robust.
-  });
+  // Initial status
+  updateStatus("Ready to import. Fill in the details and click 'Start Import'.");
 });

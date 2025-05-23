@@ -1,58 +1,56 @@
-# TripIt Importer Chrome Extension
+# TripIt Direct Importer Chrome Extension
 
 ## Overview
-This Chrome extension allows you to manually input your flight, hotel, transportation, activity, and TODO details and import them into your TripIt account via SAP Concur.
+This Chrome extension directly interacts with the TripIt.com website to automate the manual process of inputting your flight, hotel, transportation, activity, and note details. It works by programmatically filling out forms on the TripIt.com interface.
+
+**Important:** This extension's functionality is highly dependent on the current HTML structure and design of the TripIt.com website. Changes to TripIt.com may break the extension or cause it to malfunction.
 
 ## Features
-*   Imports flights, hotels, various transportation types, activities, and TODOs.
-*   Uses OAuth 2.0 to securely connect to your SAP Concur account.
-*   Simple interface for adding multiple travel segments.
+*   Automates the entry of flights, hotels, transportation, activities, and notes/TODOs into TripIt.com.
+*   Works with an active TripIt.com session in your browser.
+*   Simple interface for adding multiple travel segments to a trip.
+
+## Warning: Potential Fragility
+This extension performs web automation by interacting directly with the HTML elements of the TripIt.com website. If TripIt.com updates its website design or underlying code structure, this extension may stop working correctly or entirely. Regular updates to the extension might be required to maintain compatibility if TripIt.com changes.
 
 ## Prerequisites
-*   You must have an SAP Concur account that is linked to TripIt.
-*   You must register this extension as an application with SAP Concur to obtain a **Client ID** and **Client Secret**. (Link to the SAP Concur developer portal or relevant documentation if a general link is known, e.g., `https://developer.concur.com/`). This process will also provide you with the correct **API Geolocation URL** (e.g., `https://us.api.concursolutions.com` or `https://emea.api.concursolutions.com`).
+*   You must be logged into your TripIt.com account in an active browser tab for the extension to work.
+*   Google Chrome browser.
 
 ## Setup Instructions
 1.  **Download or Clone:**
-    *   Download the extension files or clone the repository.
-2.  **Configure the Extension:**
-    *   Open the `background.js` file in a text editor.
-    *   Replace the placeholder values for `CLIENT_ID`, `CLIENT_SECRET` with the credentials you obtained from SAP Concur.
-    *   Verify that `CONCUR_AUTH_URL` and `CONCUR_TOKEN_URL` (which help determine `CONCUR_API_BASE_URL`) are correct for your SAP Concur account's region (e.g., `https://us.api.concursolutions.com/oauth2/v0/authorize` and `https://us.api.concursolutions.com/oauth2/v0/token`). The actual API endpoint used for data submission will also depend on the `geolocation` value returned during OAuth, which the extension attempts to use.
-3.  **Install the Extension in Chrome:**
+    *   Download the extension files as a ZIP and extract them, or clone the repository to your local machine.
+2.  **Install the Extension in Chrome:**
     *   Open Chrome and navigate to `chrome://extensions`.
-    *   Enable "Developer mode" (usually a toggle in the top right).
-    *   Click "Load unpacked".
-    *   Select the directory where you downloaded/cloned the extension files.
-4.  **Register Redirect URI with SAP Concur:**
-    *   After loading the extension, Chrome will assign it an Extension ID. You can find this on the `chrome://extensions` page.
-    *   The Redirect URI for the OAuth flow will be `https://<your-extension-id>.chromiumapp.org/oauth2`. (Note: The `oauth2` part is a placeholder path defined by `chrome.identity.getRedirectURL("oauth2")` in the code; ensure this matches exactly if you modified the placeholder in `background.js` for `getRedirectURL`).
-    *   You **MUST** add this exact Redirect URI to your application's configuration settings in the SAP Concur developer portal.
+    *   Enable "Developer mode" (usually a toggle switch in the top right corner).
+    *   Click the "Load unpacked" button.
+    *   Select the directory where you downloaded/cloned and extracted the extension files.
 
 ## How to Use
-1.  **Authenticate:**
-    *   Click on the TripIt Importer extension icon in your Chrome toolbar.
-    *   Click the "Connect to Concur/TripIt" button.
-    *   You will be redirected to the SAP Concur login page. Log in and authorize the extension.
-    *   The popup should now indicate that you are connected.
-2.  **Input Travel Data:**
-    *   Fill in the overall "Trip Details" (Trip Name, Dates, Destination).
+1.  **Log into TripIt.com:**
+    *   Open a new tab and navigate to `https://www.tripit.com`.
+    *   Log in to your account and ensure your dashboard or the relevant trip page is loaded.
+2.  **Open the Extension:**
+    *   Click the "TripIt Direct Importer" extension icon in your Chrome toolbar.
+3.  **Input Travel Data:**
+    *   The extension popup will appear. Fill in the overall "Trip Details" (Trip Name, Dates, Destination).
     *   Use the "Add Flight," "Add Hotel," etc., buttons to add your travel items.
     *   Fill in the details for each item.
-3.  **Import:**
-    *   Once all details are entered, click the "Import to TripIt/Concur" button.
-    *   The extension will process the data and show a success or error message.
-    *   Check your Concur account (and subsequently TripIt) to see the imported trip.
+4.  **Start Import:**
+    *   Once all details are entered, click the "Start Import to TripIt.com" button.
+    *   The extension will attempt to automate data entry on your active TripIt.com tab. It's recommended to keep this tab visible and not interact with it during the import process.
+    *   Status messages will appear in the extension popup.
 
 ## Troubleshooting
-*   **Not Connecting:**
-    *   Ensure your Client ID, Client Secret, and API URLs in `background.js` are correct.
-    *   Verify that the Redirect URI (`https://<your-extension-id>.chromiumapp.org/oauth2`) is correctly registered in your SAP Concur application settings. The `<your-extension-id>` must be replaced with the actual ID from `chrome://extensions`.
-*   **Import Errors:**
-    *   The extension will attempt to display error messages from the API. These might provide clues about missing or incorrect data.
-    *   Check the extension's console for more detailed error messages:
-        1.  Right-click the extension icon and select "Inspect popup" (for popup errors).
-        2.  For background script errors: Go to `chrome://extensions`, find the "TripIt Importer" extension, click on "Details," and then click the link next to "Inspect views" (often "service worker").
+*   **Import Fails or Behaves Unexpectedly:**
+    *   **TripIt.com Website Changes:** TripIt.com may have updated its website structure. The extension might need an update to align with the new structure.
+    *   **Not Logged In:** Ensure you are actively logged into TripIt.com in another tab.
+    *   **Incorrect Tab Active:** Make sure the tab with TripIt.com is the active tab in your current window when you start the import, or that the extension is correctly identifying it.
+    *   **Page Not Fully Loaded:** Ensure the TripIt.com page is fully loaded before initiating the import.
+    *   **Check Extension Consoles:**
+        1.  **Popup Console:** Right-click the extension icon, select "Inspect popup," and check the "Console" tab for errors.
+        2.  **Content Script Console:** Go to your TripIt.com tab, open Chrome Developer Tools (right-click on the page -> Inspect), and check the "Console" tab for errors logged by the content script.
+*   **Slow Import:** The automation process involves interacting with web pages, which can take time. Allow the extension to complete its operations.
 
 ## Disclaimer
-This extension interacts with SAP Concur APIs. Ensure you comply with SAP Concur's terms of service for API usage. The developers of this extension are not responsible for any issues with your Concur or TripIt account. Use at your own risk.
+This extension is a third-party tool and is not affiliated with TripIt or SAP Concur. It interacts with the TripIt.com website by automating user actions. Users should be aware of TripIt's Terms of Service regarding automated access or data entry. The developers of this extension are not responsible for any issues with your TripIt account, data loss, or other problems that may arise from its use. Use at your own risk.
