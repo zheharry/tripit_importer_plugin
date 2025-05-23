@@ -52,5 +52,17 @@ This extension performs web automation by interacting directly with the HTML ele
         2.  **Content Script Console:** Go to your TripIt.com tab, open Chrome Developer Tools (right-click on the page -> Inspect), and check the "Console" tab for errors logged by the content script.
 *   **Slow Import:** The automation process involves interacting with web pages, which can take time. Allow the extension to complete its operations.
 
+## Understanding and Customizing `content_script.js`
+
+The core logic for interacting with the TripIt.com website resides in the `content_script.js` file. This script is designed to automate the process of filling out forms and clicking buttons on your behalf.
+
+**Key Points:**
+
+*   **Placeholder Selectors:** The current version of `content_script.js` uses **placeholder CSS selectors** to identify elements on TripIt.com (e.g., `"#tripNameInput"`, `".add-flight-button"`). These are examples and **will likely not work out-of-the-box**.
+*   **Your Primary Task:** If you intend to use or adapt this extension, your main task will be to inspect the TripIt.com website using your browser's developer tools and replace these placeholder selectors with the actual, current selectors used by TripIt.
+*   **Dynamic Content and Timing:** Websites like TripIt often load content dynamically. The script includes `waitForElement` helper functions, but you may need to adjust timeouts or add more specific checks to ensure elements are present and interactive before the script attempts to use them. You might also need to add small delays (`await new Promise(r => setTimeout(r, 500));`) between certain actions if the website needs more time to process.
+*   **Debugging:** Use the browser's Developer Tools (Console and Elements panel) extensively while on a TripIt.com page where the content script is active. `console.log` messages within `content_script.js` will appear here, helping you trace its execution and identify issues with selectors or logic.
+*   **Fragility:** As mentioned, this approach is inherently fragile. Any significant update to TripIt.com's website structure may require you to update the selectors and logic in `content_script.js` again.
+
 ## Disclaimer
 This extension is a third-party tool and is not affiliated with TripIt or SAP Concur. It interacts with the TripIt.com website by automating user actions. Users should be aware of TripIt's Terms of Service regarding automated access or data entry. The developers of this extension are not responsible for any issues with your TripIt account, data loss, or other problems that may arise from its use. Use at your own risk.
