@@ -1,43 +1,225 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>TripIt Plan Importer</title>
+  <title>TripIt Importer</title>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      font-family: sans-serif;
-      width: 350px;
-      padding: 10px;
+    body { font-family: sans-serif; width: 450px; padding: 10px; font-size: 14px; }
+    .section { margin-bottom: 20px; border: 1px solid #ccc; padding: 10px; border-radius: 5px; }
+    .section h3 { margin-top: 0; }
+    label { display: block; margin-bottom: 2px; font-weight: bold; }
+    input[type="text"], input[type="date"], input[type="time"], input[type="number"], select {
+      width: calc(100% - 10px);
+      padding: 5px;
+      margin-bottom: 8px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      box-sizing: border-box;
     }
-    textarea {
-      width: 95%;
-      min-height: 150px;
-      margin-bottom: 10px;
+    .entry { border: 1px dashed #eee; padding: 10px; margin-bottom: 10px; position: relative; }
+    .entry .remove-button {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background-color: #ff6b6b;
+      color: white;
+      border: none;
+      padding: 3px 7px;
+      cursor: pointer;
+      border-radius: 3px;
+      font-size: 12px;
     }
+    .button-bar { margin-top: 10px; }
     button {
-      padding: 10px 15px;
+      padding: 8px 12px;
       background-color: #007bff;
       color: white;
       border: none;
       cursor: pointer;
       border-radius: 3px;
+      margin-right: 5px;
     }
-    button:hover {
-      background-color: #0056b3;
-    }
-    #status {
-      margin-top: 10px;
-      font-size: 0.9em;
-    }
+    button:hover { background-color: #0056b3; }
+    #disconnect-button { background-color: #dc3545; }
+    #disconnect-button:hover { background-color: #c82333; }
+    .hidden { display: none; }
+    #auth-status { margin-bottom: 10px; padding: 8px; border: 1px solid #eee; border-radius: 3px; }
+    .status-connected { background-color: #e6ffed; border-color: #34c759; }
+    .status-disconnected { background-color: #ffebeb; border-color: #ff3b30; }
+    .status-pending { background-color: #fff3e0; border-color: #ff9500; }
+    .input-group { display: flex; gap: 10px; }
+    .input-group > div { flex: 1; }
   </style>
 </head>
 <body>
-  <h3>Import your CSV file or paste data below:</h3>
-  <input type="file" id="csvFileInput" accept=".csv" style="margin-bottom:10px;" />
-  <textarea id="planData" placeholder="Subject,Start Date,Start Time,End Date,End Time,Location,Description..."></textarea>
-  <button id="importButton">Import to TripIt</button>
-  <div id="status"></div>
+  <div id="auth-section">
+    <div id="auth-status">Checking authentication status...</div>
+    <button id="connect-button">Connect to Concur/TripIt</button>
+    <button id="disconnect-button" class="hidden">Disconnect</button>
+  </div>
+
+  <form id="importer-form" class="hidden">
+    <div class="section" id="trip-details-section">
+      <h3>Trip Details</h3>
+      <label for="tripName">Trip Name:</label>
+      <input type="text" id="tripName" required>
+      <div class="input-group">
+        <div>
+          <label for="tripStartDate">Start Date:</label>
+          <input type="date" id="tripStartDate">
+        </div>
+        <div>
+          <label for="tripEndDate">End Date:</label>
+          <input type="date" id="tripEndDate">
+        </div>
+      </div>
+      <label for="tripDestination">Main Destination:</label>
+      <input type="text" id="tripDestination">
+    </div>
+
+    <div class="section" id="flights-section-container">
+      <h3>Flights</h3>
+      <div id="flights-section">
+        <!-- Flight entries will be added here -->
+      </div>
+      <div class="button-bar">
+        <button type="button" id="add-flight-button">Add Flight</button>
+      </div>
+    </div>
+
+    <div class="section" id="hotels-section-container">
+      <h3>Hotels</h3>
+      <div id="hotels-section">
+        <!-- Hotel entries will be added here -->
+      </div>
+      <div class="button-bar">
+        <button type="button" id="add-hotel-button">Add Hotel</button>
+      </div>
+    </div>
+
+    <div class="section" id="transportation-section-container">
+      <h3>Transportation</h3>
+      <div id="transportation-section">
+        <!-- Transportation entries will be added here -->
+      </div>
+      <div class="button-bar">
+        <button type="button" id="add-transport-button">Add Transportation</button>
+      </div>
+    </div>
+
+    <div class="section" id="activities-section-container">
+      <h3>Activities</h3>
+      <div id="activities-section">
+        <!-- Activity entries will be added here -->
+      </div>
+      <div class="button-bar">
+        <button type="button" id="add-activity-button">Add Activity</button>
+      </div>
+    </div>
+
+    <div class="section" id="todos-section-container">
+      <h3>TODOs</h3>
+      <div id="todos-section">
+        <!-- TODO entries will be added here -->
+      </div>
+      <div class="button-bar">
+        <button type="button" id="add-todo-button">Add TODO</button>
+      </div>
+    </div>
+
+    <button type="submit" id="submit-button">Import to TripIt/Concur</button>
+    <div id="submission-status" style="margin-top:10px;"></div>
+  </form>
+
+  <!-- Templates for dynamic entries -->
+  <template id="flight-template">
+    <div class="entry flight-entry">
+      <button type="button" class="remove-button remove-flight">X</button>
+      <label>Airline:</label><input type="text" class="flightAirline">
+      <label>Flight Number:</label><input type="text" class="flightNumber">
+      <div class="input-group">
+        <div>
+          <label>Departure City/Airport:</label><input type="text" class="flightDepCity">
+          <label>Departure Date:</label><input type="date" class="flightDepDate">
+          <label>Departure Time:</label><input type="time" class="flightDepTime">
+        </div>
+        <div>
+          <label>Arrival City/Airport:</label><input type="text" class="flightArrCity">
+          <label>Arrival Date:</label><input type="date" class="flightArrDate">
+          <label>Arrival Time:</label><input type="time" class="flightArrTime">
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="hotel-template">
+    <div class="entry hotel-entry">
+      <button type="button" class="remove-button remove-hotel">X</button>
+      <label>Hotel Name:</label><input type="text" class="hotelName">
+      <label>City:</label><input type="text" class="hotelCity">
+      <div class="input-group">
+        <div>
+          <label>Check-in Date:</label><input type="date" class="hotelCheckinDate">
+        </div>
+        <div>
+          <label>Check-out Date:</label><input type="date" class="hotelCheckoutDate">
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="transport-template">
+    <div class="entry transport-entry">
+      <button type="button" class="remove-button remove-transport">X</button>
+      <label>Type:</label>
+      <select class="transportType">
+        <option value="Car Rental">Car Rental</option>
+        <option value="Taxi">Taxi</option>
+        <option value="Train">Train</option>
+        <option value="Other">Other</option>
+      </select>
+      <label>Vendor/Company:</label><input type="text" class="transportVendor">
+      <div class="input-group">
+        <div>
+          <label>Start Location:</label><input type="text" class="transportStartLoc">
+          <label>Start Date:</label><input type="date" class="transportStartDate">
+          <label>Start Time:</label><input type="time" class="transportStartTime">
+        </div>
+        <div>
+          <label>End Location:</label><input type="text" class="transportEndLoc">
+          <label>End Date:</label><input type="date" class="transportEndDate">
+          <label>End Time:</label><input type="time" class="transportEndTime">
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="activity-template">
+    <div class="entry activity-entry">
+      <button type="button" class="remove-button remove-activity">X</button>
+      <label>Activity Name/Description:</label><input type="text" class="activityName">
+      <label>Location:</label><input type="text" class="activityLocation">
+      <div class="input-group">
+        <div>
+          <label>Date:</label><input type="date" class="activityDate">
+          <label>Time:</label><input type="time" class="activityTime">
+        </div>
+        <div>
+          <label>Estimated Cost (USD):</label><input type="number" class="activityCost" step="0.01" min="0">
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="todo-template">
+    <div class="entry todo-entry">
+      <button type="button" class="remove-button remove-todo">X</button>
+      <label>TODO Description:</label><input type="text" class="todoDescription">
+      <label>Due Date:</label><input type="date" class="todoDueDate">
+      <label>Location (Optional):</label><input type="text" class="todoLocation">
+    </div>
+  </template>
+
   <script src="popup.js"></script>
 </body>
 </html>

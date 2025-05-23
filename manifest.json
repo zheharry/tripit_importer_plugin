@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "TripIt Importer",
+  "version": "1.0",
+  "description": "Imports flight, hotel, and other travel plans to TripIt via SAP Concur.",
+  "permissions": [
+    "storage",
+    "identity",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://*.api.concursolutions.com/"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "oauth2": {
+    "client_id": "YOUR_ACTUAL_CHROME_EXTENSION_WEB_CLIENT_ID.apps.googleusercontent.com",
+    "scopes": [
+      "travelrequest.write",
+      "user.read",
+      "travel.itinerary.read"
+    ]
+  }
+}
