@@ -1,0 +1,82 @@
+{
+  "tripId": "",
+  "plans": [
+    {
+      "type": "lodging",
+      "data": {
+        "hotelName": "",
+        "address": "",
+        "checkInDate": "dd/mm/yyyy",
+        "checkOutDate": "dd/mm/yyyy",
+        "checkInTime": "hh:mm",
+        "checkOutTime": "hh:mm"
+      }
+    },
+    {
+      "type": "note",
+      "data": {
+        "title": "",
+        "details": "",
+        "date": "dd/mm/yyyy",
+        "time": "hh:mm"
+      }
+    },
+    {
+      "type": "rail",
+      "data": {
+        "carrierName": "",
+        "trainNumber": "",
+        "departureStation": "",
+        "departureDate": "",
+        "departureTime": "",
+        "arrivalStation": "",
+        "arrivalDate": "",
+        "arrivalTime": ""
+      }
+    },
+    {
+      "type": "activity",
+      "data": {
+        "eventName": "",
+        "startDate": "dd/mm/yyyy",
+        "startTime": "hh:mm",
+        "venue": "",
+        "address": ""
+      }
+    },
+    {
+      "type": "restaurant",
+      "data": {
+        "restaurantName": "",
+        "address": "",
+        "date": "dd/mm/yyyy",
+        "time": "hh:mm"
+      }
+    },
+    {
+      "type": "flight",
+      "data": {
+        "airline": "NH",
+        "flightNumber": "853",
+        "departureAirport": "TSA",
+        "departureDate": "dd/mm/yyyy",
+        "arrivalCity": "HND",
+        "arrivalDate": "dd/mm/yyyy",
+      }
+    },
+    {
+      "type": "car",
+      "data": {
+        "rentalAgency": "",
+        "pickupDate": "dd/mm/yyyy",
+        "pickupTime": "hh:mm",
+        "pickupLocation": "",
+        "dropoffDate": "dd/mm/yyyy",
+        "dropoffTime": "hh:mm",
+        "dropoffLocation": "",
+        "confirmationNumber": "",
+        "carType": ""
+      }
+    }
+  ]
+}

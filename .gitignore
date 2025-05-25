@@ -1,0 +1,4 @@
+.env
+*.html
+*.json
+node_modules/*
